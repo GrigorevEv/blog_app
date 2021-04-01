@@ -3,5 +3,4 @@ venv/
 bin/
 gunicorn_config.py
 **/__pycache__
-static/
 staticfiles/
