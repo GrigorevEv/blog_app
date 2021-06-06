@@ -1,55 +1,82 @@
 {% extends "blog/base.html" %}
 {% load blog_tags %}
 {% block title %}{{ post.title }}{% endblock %}
+
 {% block content %}
-    <h1>{{ post.title }}</h1>
-    <p class="tags">
-      Tags:
+
+  <article class='post-box-detail'>
+    
+    <!-- Article's title -->
+
+    <div class='post-title'>
+      <h1>{{ post.title }}</h1>
+    </div>
+    
+    <!-- Tags -->
+
+    <div class="tags">
+      Теги:
       {% for tag in post.tags.all %}
-        <a href="{% url "blog:post_list_by_tag" tag.slug %}">
+        <a href="{% url "blog:articles_by_tag" tag.slug %}">
           {{ tag.name }}
         </a>
         {% if not forloop.last %}, {% endif %}
       {% endfor %}
-    </p>
+    </div>
+  
+    <!-- Date of the article -->
 
-    <p class="date">Publidshed {{ post.publish }} by {{ post.author }}</p>
-    {{ post.body|markdown }}
-    <p>
-        <a href="{% url "blog:post_share" post.id %}">Share this post</a>
-    </p>
+    <time class="date">
+      Опубликовано {{ post.publish }}
+    </time>
+  
+    <!-- Article's text -->
+
+    <div class='post-text'>
+      {{ post.body|markdown }}
+    </div>
+
+    <!-- Post share text -->
+    
+    <div class='post-share'>
+      <a class='post-share-text' href="{% url "blog:post_share" post.id %}">Поделиться публикацией</a>
+    </div>
+
+  </article>
+
+  <!-- List of similar posts -->
+  
+  <div class='similar-posts'>
     {% if similar_posts %}
-     <h2>Similar posts<h2>
-     {% for similar_post in similar_posts %}
-       <h4>
-         <a href="{{ similar_post.get_absolute_url }}">
-            {{ similar_post.title }}
-         </a>
-       </h4>
-     {% endfor %}
+      <h3>Похожие публикации</h3>
+      <ul>
+        {% for similar_post in similar_posts %}
+          <li><a href="{{ similar_post.get_absolute_url }}">
+              {{ similar_post.title }}</a></li>
+        {% endfor %}
+      </ul>
     {% endif %}
+  </div>
+
+  <!-- Comments -->
+
+  <div class='comments'>
     {% with comments.count as total_comments %}
-        <h2>{{ total_comments }} comment{{ total_comments|pluralize }}</h2>
+      <h2 class='total-comments'>{{ total_comments }} комментари{{ total_comments|plural_comment }}</h2>
     {% endwith %}
     {% for comment in comments %}
-        <div class="comment">
-            <p class="info">
-                 Comment {{ forloop.counter }} by {{ comment.name }}
-                 {{ comment.created }}
-            </p>
-            {{ comment.body|linebreaks }}
-        </div>
+      <div class="one-comment">
+        <span class='commentators-name'>{{ comment.name }}</span>
+        <span class='comment-date'>{{ comment.created }}</span>
+        <div class='comment-body'>{{ comment.body|linebreaks }}</div>
+      </div>
     {% empty %}
-        <p>There are on comments yet.</p>
+      <p>На данный момент нет комментариев.</p>
     {% endfor %}
-    {% if new_comment %}
-        <h2>Your comment has been added.</h2>
-    {% else %}
-        <h2>Add a new comment</h2>
-        <form action="." method="post">
-            {{ comment_form.as_p }}
-            {% csrf_token %}
-            <p><input type="submit" value="Add comment"></p>
-        </form>
-    {% endif %}
+  </div>
+
+  <!-- Comments form -->
+
+  {% comment_form post_id=post.id %}
+
 {% endblock %}

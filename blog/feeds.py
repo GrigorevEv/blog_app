@@ -5,9 +5,12 @@ from .models import Post
 
 
 class LatestPostsFeed(Feed):
-    title = 'My blog'
+    '''
+    Подписка на RSS рассылку
+    '''
+    title = 'Муж-лягуш и Прикотятор'
     link = '/blog/'
-    description = 'New posts of my blog.'
+    description = 'Новые статьи в нашем блоге'
 
     def items(self):
         return Post.published.all()[:5]

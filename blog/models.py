@@ -1,65 +1,115 @@
-from django.db import models
-from django.utils import timezone 
 from django.contrib.auth.models import User 
+from django.contrib.sites.models import Site
+from django.core.mail import send_mail
+from django.db import models
 from django.urls import reverse
+from django.utils import timezone 
+
 from taggit.managers import TaggableManager
 
 
 class PublishedManager(models.Manager): 
+    '''
+    Менеджер для возврата всех опубликованных статей.
+    '''
     def get_queryset(self): 
-        return super(PublishedManager, self).get_queryset().filter(status='published')
+        return super(PublishedManager,
+                     self).get_queryset().filter(status='published')
 
 
 class Post(models.Model): 
+    '''
+    Модель статей блога.
+    '''
     STATUS_CHOICES = ( 
-        ('draft', 'Draft'), 
-        ('published', 'Published'), 
-    ) 
-    title = models.CharField(max_length=250) 
-    slug = models.SlugField(max_length=250,  
+        ('draft', 'Черновик'), 
+        ('published', 'Опубликовано'), 
+    )
+    title = models.CharField('Заголовок', max_length=250) 
+    slug = models.SlugField('Слаг', max_length=250,
                             unique_for_date='publish') 
-    author = models.ForeignKey(User, 
+    author = models.ForeignKey(User, verbose_name='Автор',
                                on_delete=models.CASCADE,
-                               related_name='blog_posts') 
-    body = models.TextField() 
-    publish = models.DateTimeField(default=timezone.now) 
-    created = models.DateTimeField(auto_now_add=True) 
-    updated = models.DateTimeField(auto_now=True) 
-    status = models.CharField(max_length=10,  
-                              choices=STATUS_CHOICES, 
-                              default='draft') 
-    
-    objects = models.Manager() # The default manager. 
-    published = PublishedManager() # Our custom manager.
+                               related_name='blog_posts')
+    body = models.TextField('Текст статьи') 
+    publish = models.DateTimeField('Опубликовано', default=timezone.now) 
+    created = models.DateTimeField('Создано', auto_now_add=True) 
+    updated = models.DateTimeField('Обновлено', auto_now=True) 
+    status = models.CharField('Статус', max_length=10, choices=STATUS_CHOICES, 
+                                                       default='draft')
+    main_page_photo = models.ImageField('Фото на главной странице',
+                                        upload_to='main_page_photos/%Y/%m/%d/',
+                                        default='') 
+    objects = models.Manager() 
+    published = PublishedManager()
     tags = TaggableManager()
 
     class Meta: 
         ordering = ('-publish',) 
+        verbose_name = 'пост'
+        verbose_name_plural = 'Посты'
 
     def __str__(self): 
         return self.title
 
     def get_absolute_url(self):
-        return reverse('blog:post_detail',
-                       args=[self.publish.year,
-                             self.publish.month,
-                             self.publish.day,
-                             self.slug])
+        return reverse('blog:post_detail', args=[self.slug])
+
+    def save(self, *args, **kwargs):
+        '''
+        Переопределяет стандартную функцию save.
+        После сохранения опубликованной статьи - делает рассылку
+        по почте подписчикам.
+        '''
+        super().save(*args, **kwargs)
+        all_subscribers = Subscribe.objects.all()
+        if self.status == 'published':
+            for subscriber in all_subscribers:
+                send_mail('Муж-лягуж и Прикотятор',
+                          'Вышла новая интересная статья!!!\n'
+                          'Взгляните, она правда интересная =)\n'
+                          'http://{}{}'.format(
+                          Site.objects.get_current().domain,
+                          self.get_absolute_url()),
+                          'tmail4545@gmail.com',
+                          [subscriber.subscriber_email])
 
 
 class Comment(models.Model): 
-    post = models.ForeignKey(Post,
+    '''
+    Модель данных для комментариев статей.
+    '''
+    post = models.ForeignKey(Post, verbose_name='Пост',
                              on_delete=models.CASCADE,
                              related_name='comments')
-    name = models.CharField(max_length=80) 
-    email = models.EmailField() 
-    body = models.TextField() 
-    created = models.DateTimeField(auto_now_add=True) 
-    updated = models.DateTimeField(auto_now=True) 
-    active = models.BooleanField(default=True) 
+    name = models.CharField('Имя', max_length=80) 
+    email = models.EmailField('Email') 
+    body = models.TextField('Текст комментария') 
+    created = models.DateTimeField('Создан', auto_now_add=True) 
+    updated = models.DateTimeField('Обновлен', auto_now=True) 
+    active = models.BooleanField('Активен', default=True) 
  
     class Meta: 
         ordering = ('created',) 
- 
+        verbose_name = 'комментарий'
+        verbose_name_plural = 'Комментарии'
+
     def __str__(self): 
         return 'Comment by {} on {}'.format(self.name, self.post)
+
+
+class Subscribe(models.Model):
+    '''
+    Модель для хранения данных подписчиков
+    '''
+    subscriber_email = models.EmailField('Email', max_length=50, unique=True)
+    subscription_date = models.DateTimeField('Дата подписки',
+                                             auto_now_add=True)
+
+    class Meta:
+        ordering = ('subscription_date',)
+        verbose_name = 'данные подписчиков'
+        verbose_name_plural = 'данные подписчиков'
+
+    def __str__(self):
+        return self.subscriber_email

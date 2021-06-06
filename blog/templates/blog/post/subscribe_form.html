@@ -1,0 +1,10 @@
+<h3>Подписка на рассылку</h3>
+<p>Подписывайтесь и получайте уведомления о новых интересных статьях по почте.</p>
+<form class='subscribe-form' action="{% url 'blog:subscribe' %}" method="post">
+  {% csrf_token %}
+  {{ subscribe_form }}
+  <button class='subscribe-btn' type='submit'>
+    <i class="fa fa-bell-o" aria-hidden="true"></i>
+  </button>
+</form>
+

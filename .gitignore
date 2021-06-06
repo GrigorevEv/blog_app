@@ -4,3 +4,5 @@ bin/
 gunicorn_config.py
 **/__pycache__
 staticfiles/
+media/
+pg_data/

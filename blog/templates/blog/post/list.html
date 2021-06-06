@@ -1,31 +1,75 @@
 {% extends "blog/base.html" %}
 {% load blog_tags %} 
-{% block title %}My Blog{% endblock %}
- 
+{% load static %}
+{% block title %}Муж-лягуж и Прикотятор{% endblock %}
 {% block content %}
-  <h1>My Blog</h1>
-  {% if tag %}
-    <h2>Posts tagged with "{{ tag.name }}"</h2>
-  {% endif %}
+
+
+  <div class='additional-phrases'>
+    {% if tag %}
+      <h2>Наидено по тегу "{{ tag.name }}"</h2>
+      <h3>
+       {% with filtered_articles.count as total_results %}
+        Всего {{ total_results }} результат{{ total_results|plural_result }}
+       {% endwith %}
+      </h3>
+    {% endif %}
+
+    {% if search_query %}
+      <h2>Публикации, содержащие "{{ search_query }}"</h2>
+      <h3>
+       {% with filtered_articles.count as total_results %}
+        Всего {{ total_results }} результат{{ total_results|plural_result }}
+       {% endwith %}
+      </h3>
+    {% endif %}
+  </div>
+
   {% for post in posts %}
-    <h2>
-      <a href="{{ post.get_absolute_url }}">
-        {{ post.title }}
-      </a>
-    </h2>
-    <p class="tags">
-      Tags:
-      {% for tag in post.tags.all %}
-        <a href="{% url "blog:post_list_by_tag" tag.slug %}">
-          {{ tag.name }}
+    <article class='post-box'>
+
+      <div class='post-photo'>
+        <a href='{{ post.get_absolute_url }}'>
+          {% if post.main_page_photo %}
+            <img src='{{ post.main_page_photo.url }}' alt=''>
+          {% else %}
+            <img src="https://picsum.photos/300/300?random=1">
+          {% endif %}
         </a>
-        {% if not forloop.last %}, {% endif %}
-      {% endfor %}
-    </p>
-    <p class="date">
-      Published {{ post.publish }} by {{ post.author }}
-    </p>
-    {{ post.body|markdown|truncatewords_html:30 }}
+      </div>
+
+      <div class='post-text-content'>
+        <div class='post-title'>
+          <h2><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></h2>
+        </div>
+
+        <div class="tags">
+          Теги:
+          {% for tag in post.tags.all %}
+            <a href="{% url "blog:articles_by_tag" tag.slug %}">
+              {{ tag.name }}
+            </a>
+            {% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        </div>
+
+        <time class="date">
+          Опубликовано {{ post.publish }}
+        </time>
+
+        <div class='post-text'>
+          {{ post.body|markdown|truncatewords_html:40 }}
+        </div>
+        
+        <div class='read-next'>
+          <a class='read-next-text' href='{{ post.get_absolute_url }}'>Читать далее</a>
+        </div>
+      </div>
+    </article>
+  {% empty %}
+    <div class='additional-phrases'>
+      <p><h3>К сожалению совпадений не нашлось =(</h3></p>
+    </div>
   {% endfor %}
   {% include "pagination.html" with page=posts %}
 {% endblock %}

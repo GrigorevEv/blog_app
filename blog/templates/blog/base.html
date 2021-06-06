@@ -1,30 +1,82 @@
 {% load blog_tags %}
 {% load static %}
+
 <!DOCTYPE html>
+
 <html>
 <head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
   <title>{% block title %}{% endblock %}</title>
   <link href="{% static "blog/blog.css" %}" rel="stylesheet">
+  <link rel="stylesheet" type='text/css' href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" >
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@700&display=swap" rel="stylesheet">
 </head>
-<body>
-  <div id="content">
-    {% block content %}
-    {% endblock %}
-  </div>
-  <div id="sidebar">
-    <h2>My blog</h2>
-    <p>This is my blog. I've written {% total_posts %} posts so far.</p>
-    <p><a href="{% url "blog:post_feed" %}">Subscribe to my RSS feed</a></p>
-    <h3>Latest posts</h3>
-    {% show_latest_posts 3 %}
 
-    <h3>Most commented posts</h3>
-    {% get_most_commented_posts 4 as most_commented_posts %}
-    <ul>
-     {% for post in most_commented_posts %}
-      <li><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></li>
-     {% endfor %}
-    </ul>
-  </div>
+<body>
+  <div class='page'>
+  
+    <!-- Header -->
+  
+    <header class='header'>
+      <a href="{% url 'blog:published_articles' %}">
+        <img class='header-image' src="{% static "blog/images/header.jpg" %}" alt="Муж-лягуш и Прикотятор">
+      </a>
+    </header>
+    
+    <!-- Content -->
+  
+    <div class='content'>
+  
+      <!-- Main -->
+  
+      <main class="main">
+        {% block content %}
+        {% endblock %}
+      </main>
+      
+      <!-- Sidebar-->
+       
+      <aside class='sidebar-box'>
+        <div class="sidebar">
+              
+          <!-- Search -->
+  
+          {% search_form %}
+            
+          <!-- Subscribe -->
+  
+          <div class='subscribe'>
+            {% subscribe_form %}
+            <div class='subscribe-message'>
+              {% if messages %}
+                {% for message in messages %}
+                  <p>{{ message }}</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- RSS -->
+  
+          <p><a href="{% url "blog:post_feed" %}">Подписывайтесь на нашу RSS ленту</a></p>
+          
+          <!-- Popular posts-->
+  
+          <h3>Самые популярные публикации</h3>
+            {% get_most_commented_posts 4 as most_commented_posts %}
+          <ul>
+           {% for post in most_commented_posts %}
+            <li><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></li>
+           {% endfor %}
+          </ul>
+  
+        </div><!-- /.sidebar -->
+      </aside><!-- /.sidebar-box -->
+    </div><!-- /.content -->   
+  </div><!-- /.page -->
 </body>
 </html>

@@ -1,0 +1,6 @@
+<form class='search' action="{% url 'blog:articles_by_search' %}" method="get">
+  {{ search_form }}
+  <button class='search-btn' title="Поиск" type='submit'>
+    <i class="fa fa-search" aria-hidden="true"></i>
+  </button>
+</form>

@@ -1,111 +1,129 @@
-from django.core.mail import send_mail
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.contrib.postgres.search import TrigramSimilarity
-from django.db.models import Count
-from django.shortcuts import render, get_object_or_404
-from django.views.generic import ListView
-from taggit.models import Tag
+from django.contrib import messages
+from django.shortcuts import render, redirect
 
-from .forms import CommentForm, EmailPostForm, SearchForm
-from .models import Comment, Post
+from .forms import CommentForm, EmailPostForm, SearchForm, SubscribeForm
+from .services import filters_articles_by_search, makes_pagination, \
+    filters_articles_by_tag, retrieves_a_tag, published_articles_list, \
+    subscribe_error, retrieves_a_post, post_comments, similar_posts, \
+    saves_new_comment, sends_mail
 
 
-def post_list(request, tag_slug=None):
-    object_list = Post.published.all()
-    tag = None
+def published_articles(request):
+    '''
+    Выводит все опубликованные статьи на главной странице сайта с
+    использованием пагинации.
+    '''
+    page=request.GET.get('page')
+    posts = makes_pagination(published_articles_list(), page)
+    return render(request, 'blog/post/list.html', {'page': page,
+                                                   'posts': posts})
+                   
 
-    if tag_slug:
-        tag = get_object_or_404(Tag, slug=tag_slug)
-        object_list = object_list.filter(tags__in=[tag])
-
-    paginator = Paginator(object_list, 4) # 4 posts in each page
-    page = request.GET.get('page')
-    try:
-        posts = paginator.page(page)
-    except PageNotAnInteger:
-        # If page is not an integer deliver the first page
-        posts = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range deliver last page of results
-        posts = paginator.page(paginator.num_pages)
+def articles_by_tag(request, tag_slug):
+    '''
+    Выводит список статей в соответствии с выбранным тегом c 
+    использованием пагинации
+    '''
+    tag = retrieves_a_tag(tag_slug)
+    filtered_articles = filters_articles_by_tag(tag)
+    page=request.GET.get('page')
+    posts = makes_pagination(filtered_articles, page)
     return render(request, 'blog/post/list.html',
-                  {'page': page,
-                   'posts': posts,
-                   'tag': tag})
+                     {'filtered_articles': filtered_articles,
+                      'page': page,
+                      'posts': posts,
+                      'tag': tag
+                     })
+     
 
-class PostListView(ListView):
-    queryset = Post.published.all()
-    context_object_name = 'posts'
-    paginate_by = 4
-    template_name = 'blog/post/list.html'
+def articles_by_search(request):
+    '''
+    Выводит список статей в соответствии с поисковым запросом с
+    использованием пагинации
+    '''
+    if 'search_query' in request.GET:
+        search_form = SearchForm(request.GET)
+        if search_form.is_valid:
+            search_query = search_form.data['search_query']
+            filtered_articles = filters_articles_by_search(search_query)
+            page=request.GET.get('page')
+            posts = makes_pagination(filtered_articles, page)
+            return render(request, 'blog/post/list.html',
+                             {'filtered_articles': filtered_articles,
+                              'page': page,
+                              'posts': posts,
+                              'search_query': search_query
+                         })
+    return redirect('blog:published_articles')
 
 
-def post_detail(request, year, month, day, post):
-    post = get_object_or_404(Post, slug=post, status='published', publish__year=year, publish__month=month, publish__day=day)
-    # Список активных комментариев для этой статьи.
-    comments = post.comments.filter(active=True)
-    new_comment = None
+def subscribe(request):
+    '''
+    Обработчик формы подписки
+    '''
     if request.method == 'POST':
-        # Пользователь отправил комментарий.
+        subscribe_form = SubscribeForm(request.POST)
+        if subscribe_form.is_valid():
+            subscribe = subscribe_form.save()
+            messages.add_message(request, messages.INFO,
+                'Вы подписались на рассылку')
+            return redirect('blog:published_articles')
+        else:
+            messages.add_message(request, messages.INFO,
+                                 subscribe_error(subscribe_form))
+            return redirect('blog:published_articles')
+    else:
+        subscribe_form = SubscribeForm()
+    return render(request, 'blog/post/subscribe_form.html',
+                    {'subscribe_form': subscribe_form})
+
+
+def post_detail(request, post_slug):
+    '''
+    Отображает выбранную статью полностью, а также список похожих
+    статей, комментарии, и форму комментариев.
+    Последняя отображается через inclusion tag в шаблоне detail.html.
+    '''
+    post=retrieves_a_post(post_slug)
+    sim_posts = similar_posts(post)
+    post_comm = post_comments(post)
+    return render(request, 'blog/post/detail.html',
+                     {'post':post,
+                      'similar_posts': sim_posts,
+                      'comments': post_comm
+                 })
+
+
+def comment_form(request, post_id):
+    '''
+    Обработчик формы комментариев. 
+    '''
+    if request.method == 'POST':
+        post=retrieves_a_post(post_id)
         comment_form = CommentForm(data=request.POST)
         if comment_form.is_valid():
-            # Создаем комментарий, но пока не сохраняем в базе данных.
-            new_comment = comment_form.save(commit=False)
-            # Привязываем комментарий к текущей статье.
-            new_comment.post = post
-            # Сохраняем комментарий в базе данных.
-            new_comment.save()
+            saves_new_comment(comment_form, post)
     else:
         comment_form = CommentForm()
-    post_tags_ids = post.tags.values_list('id', flat=True)
-    similar_posts = Post.published.filter(tags__in=post_tags_ids)\
-                                  .exclude(id=post.id)
-    similar_posts = similar_posts.annotate(same_tags=Count('tags'))\
-                             .order_by('-same_tags','-publish')[:4]
-    return render(request,
-                  'blog/post/detail.html',
-                  {'post':post,
-                  'comments': comments,
-                  'new_comment': new_comment,
-                  'comment_form': comment_form,
-                  'similar_posts': similar_posts})
+    return redirect('blog:post_detail', post.slug)
 
 
 def post_share(request, post_id):
-    # Получение статьи по идентификатору.
-    post = get_object_or_404(Post, id=post_id, status='published')
+    '''
+    Обработчик формы, которая позволяет поделиться статьей по email 
+    '''
+    post = retrieves_a_post(post_id)
     sent = False
     if request.method == 'POST':
-        # Форма была отправлена на сохрнение.
         form = EmailPostForm(request.POST)
         if form.is_valid():
-            # Все поля формы прошли валидацию.
-            cd = form.cleaned_data
-            # Отправка электронной почты.
             post_url = request.build_absolute_uri(post.get_absolute_url())
-            subject = '{}({}) recomends you reading "{}"'.format(cd['name'], cd['email'], post.title)
-            message = 'Read "{}" at {}\n\n{}\'s comments:{}'.format(post.title, post_url, cd['name'], cd['comments'])
-            send_mail(subject, message, 'tmail4545@gmail.com', [cd['to']])
-            sent = True
+            sent = sends_mail(post, form, post_url)
     else:
         form = EmailPostForm()
     return render(request, 'blog/post/share.html',
-                            {'post': post, 'form': form, 'sent': sent})
+                     {'post': post,
+                     'form': form,
+                     'sent': sent
+                 })
 
-
-def post_search(request):
-    form = SearchForm()
-    query = None
-    results = []
-    if 'query' in request.GET:
-        form = SearchForm(request.GET)
-        if form.is_valid():
-            query = form.cleaned_data['query']
-            results = Post.objects.annotate(
-                similarity=TrigramSimilarity('title', query),
-            ).filter(similarity__gt=0.3).order_by('-similarity')
-    return render(request,
-                  'blog/post/search.html',
-                  {'form': form,
-                   'query': query,
-                   'results': results})

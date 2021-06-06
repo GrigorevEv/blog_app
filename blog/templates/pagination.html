@@ -1,13 +1,17 @@
 <div class="pagination">
-    <span class="step-links">
-        {% if page.has_previous %}
-            <a href="?page={{page.previous_page_number}}">Previous</a>
-        {% endif %}
-        <span class="current">
-            Page {{ page.number }} of {{ page.paginator.num_pages }}
-        </span>
-        {% if page.has_next %}
-            <a href="?page={{ page.next_page_number }}">Next</a>
-        {% endif %}
-    </span>
+  {% if page.has_previous %}
+    {% if search_query %}
+      <div class='previous'><a href="?page={{ page.previous_page_number }}&search_query={{ search_query }}">Предыдущая</a></div>
+    {% else %}
+      <div class='previous'><a href="?page={{ page.previous_page_number }}">Предыдущая</a></div>
+    {% endif %}
+  {% endif %}
+    <div><span class='page-number'>Страница {{ page.number }} из {{ page.paginator.num_pages }}</span></div>
+  {% if page.has_next %}
+    {% if search_query %}
+      <div class='next'><a href="?page={{ page.next_page_number }}&search_query={{ search_query }}">Следующая</a></div>
+    {% else %}
+      <div class='next'><a href="?page={{ page.next_page_number }}">Следующая</a></div>
+    {% endif %}
+  {% endif %}
 </div>
