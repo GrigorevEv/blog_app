@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    command: bash -c "python manage.py makemigrations --noinput &&
+                      python manage.py migrate &&
+                      python manage.py collectstatic --noinput &&
+                      gunicorn blog_app.wsgi:application -b 0.0.0.0:8000 --reload" 
+    volumes:
+      - ./:/blog_app
+      - ./staticfiles:/blog_app/staticfiles
+    ports:
+      - "8001:8000"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    env_file:
+      - ./.env 
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data/
+    ports:
+      - "5050:5432"
+
