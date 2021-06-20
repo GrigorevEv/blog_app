@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-    web:
+    web: &web
         build: .
         command: bash -c "python manage.py makemigrations --noinput &&
                           python manage.py migrate &&
@@ -13,6 +13,8 @@ services:
             - "8000:8000"
         depends_on:
             - db
+            - rabbit
+            - celery
 
     db:
         image: postgres:13
@@ -22,4 +24,18 @@ services:
             - ./pg_data:/var/lib/postgresql/data/
         ports:
             - "5050:5432"
+
+    rabbit:
+        image: rabbitmq
+        ports:
+            - '5672:5672'
+
+    celery:
+        <<: *web
+        command: celery -A blog_app worker --loglevel=INFO
+        ports: []
+        depends_on:
+            - db
+            - rabbit
+
 

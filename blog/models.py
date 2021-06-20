@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone 
 
 from taggit.managers import TaggableManager
+from .tasks import sends_mails_to_subscribers
 
 
 class PublishedManager(models.Manager): 
@@ -62,19 +63,17 @@ class Post(models.Model):
         по почте подписчикам.
         '''
         super().save(*args, **kwargs)
-        all_subscribers = Subscribe.objects.all()
-        if self.status == 'published':
-            for subscriber in all_subscribers:
-                send_mail('Муж-лягуж и Прикотятор',
-                          'Вышла новая интересная статья!!!\n'
-                          'Взгляните, она правда интересная =)\n'
-                          'http://{}{}'.format(
-                          Site.objects.get_current().domain,
-                          self.get_absolute_url()),
-                          'tmail4545@gmail.com',
-                          [subscriber.subscriber_email])
 
+        subscribers = Subscribe.objects.all()
+        all_emails = []
+        for subscriber in subscribers:
+            all_emails.append(subscriber.subscriber_email)
 
+        post_url = self.get_absolute_url()
+
+        sends_mails_to_subscribers.delay(all_emails, post_url)
+
+        
 class Comment(models.Model): 
     '''
     Модель данных для комментариев статей.

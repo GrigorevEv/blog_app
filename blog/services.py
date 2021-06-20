@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from taggit.models import Tag
 from typing import Optional, Union
 
-from .models import Post
+from .models import Post, Subscribe
 from .forms import SubscribeForm, CommentForm, EmailPostForm
 
 
@@ -134,4 +134,6 @@ def sends_mail(post: Post, form: EmailPostForm, post_url) -> bool:
               F"{cd['name']}, комментарий : {cd['comments']}"
     send_mail(subject, message, 'tmail4545@gmail.com', [cd['to']])
     return True
+
+
 
