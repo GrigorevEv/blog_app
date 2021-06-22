@@ -1,0 +1,5 @@
+SHELL=/bin/bash
+
+* * * * * root cd /blog_app/ && python manage.py dumpdata > db_dump.json
+
+

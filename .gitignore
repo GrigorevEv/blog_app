@@ -6,3 +6,4 @@ gunicorn_config.py
 staticfiles/
 media/
 pg_data/
+db_dump.json

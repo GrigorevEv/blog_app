@@ -3,7 +3,8 @@ version: "3.8"
 services:
   web: &web
     build: .
-    command: bash -c "python manage.py makemigrations --noinput &&
+    command: bash -c "service cron start &&
+                      python manage.py makemigrations --noinput &&
                       python manage.py migrate &&
                       python manage.py collectstatic --noinput &&
                       gunicorn blog_app.wsgi:application -b 0.0.0.0:8000 --reload" 
