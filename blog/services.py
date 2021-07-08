@@ -70,7 +70,7 @@ def subscribe_error(subscribe_form: SubscribeForm) -> str:
 
 def retrieves_a_post(post_slug_or_id: Union[str,int]) -> Union[Post, Http404]:
     '''
-    Возвращает объект опубликованной статьи из слага статьи.
+    Возвращает объект опубликованной статьи из слага или id статьи.
     В противном случае возвращает 404.
     '''
     if type(post_slug_or_id) == str:
@@ -90,7 +90,7 @@ def post_comments(post: Post) -> QuerySet:
 
 def _post_tags_ids(post: Post) -> QuerySet:
     '''
-    Возвращает id тегов текущего поста.
+    Возвращает id's тегов текущего поста.
     '''
     return post.tags.values_list('id', flat=True)
 

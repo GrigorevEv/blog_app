@@ -59,7 +59,9 @@ def articles_by_search(request):
 
 def subscribe(request):
     '''
-    Обработчик формы подписки
+    Обработчик формы подписки. Включает в себя сообщение об удачной подписке и 
+    сообщения ошибок валидации, указанных в классе SubscribeForm (в данном
+    случае только на уникальность).
     '''
     if request.method == 'POST':
         subscribe_form = SubscribeForm(request.POST)
@@ -82,7 +84,7 @@ def post_detail(request, post_slug):
     '''
     Отображает выбранную статью полностью, а также список похожих
     статей, комментарии, и форму комментариев.
-    Последняя отображается через inclusion tag в шаблоне detail.html.
+    Последняя отображается через inclusion_tag в шаблоне detail.html.
     '''
     post=retrieves_a_post(post_slug)
     sim_posts = similar_posts(post)
@@ -96,10 +98,10 @@ def post_detail(request, post_slug):
 
 def comment_form(request, post_id):
     '''
-    Обработчик формы комментариев. 
+    Обработчик формы комментариев.
     '''
+    post=retrieves_a_post(post_id)
     if request.method == 'POST':
-        post=retrieves_a_post(post_id)
         comment_form = CommentForm(data=request.POST)
         if comment_form.is_valid():
             saves_new_comment(comment_form, post)
@@ -110,7 +112,7 @@ def comment_form(request, post_id):
 
 def post_share(request, post_id):
     '''
-    Обработчик формы, которая позволяет поделиться статьей по email 
+    Обработчик формы, которая позволяет поделиться статьей по email.
     '''
     post = retrieves_a_post(post_id)
     sent = False
