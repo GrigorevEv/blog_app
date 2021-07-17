@@ -29,7 +29,15 @@ docker-compose -f docker-compose.dev.yml up -d
 ```
 docker exec -it blog_app_web_1 python manage.py createsuperuser
 ```
-5. Visit localhost:8000
+5. Install ckeditor html5video plugin
+```
+wget -P blog/static/ckeditor/ckeditor/plugins  https://download.ckeditor.com/html5video/releases/html5video_1.2.zip &&
+unzip blog/static/ckeditor/ckeditor/plugins/html5video_1.2.zip -d blog/static/ckeditor/ckeditor/plugins/ && 
+rm blog/static/ckeditor/ckeditor/plugins/html5video_1.2.zip &&
+mv blog/static/ckeditor/ckeditor/plugins/ckeditor-html5-video-master/html5video blog/static/ckeditor/ckeditor/plugins && 
+rm -rf blog/static/ckeditor/ckeditor/plugins/ckeditor-html5-video-master
+```
+6. Visit localhost:8000
 
 ## For production
 1. Clone the repository
@@ -45,6 +53,14 @@ docker-compose -f docker-compose.prod.yml up -d
 ```
 docker exec -it blog_app_web_1 python manage.py createsuperuser
 ```
-5. Run the Nginx container as shown in the link 
+5. Install ckeditor html5video plugin
+```
+wget -P blog/static/ckeditor/ckeditor/plugins  https://download.ckeditor.com/html5video/releases/html5video_1.2.zip &&
+unzip blog/static/ckeditor/ckeditor/plugins/html5video_1.2.zip -d blog/static/ckeditor/ckeditor/plugins/ && 
+rm blog/static/ckeditor/ckeditor/plugins/html5video_1.2.zip &&
+mv blog/static/ckeditor/ckeditor/plugins/ckeditor-html5-video-master/html5video blog/static/ckeditor/ckeditor/plugins && 
+rm -rf blog/static/ckeditor/ckeditor/plugins/ckeditor-html5-video-master
+```
+6. Run the Nginx container as shown in the link 
 https://github.com/GrigorevEv/Nginx_config_for_two_apps
-6. Visit your host address
+7. Visit your host address
